@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useAuth } from './AuthContext';
 import { Product, SellerProfile, User, CartItem, Role } from '../types';
 import { MOCK_PRODUCTS, MOCK_SELLERS, ADMIN_USER } from '../constants';
 
@@ -29,6 +30,14 @@ export const MarketplaceProvider: React.FC<{ children: ReactNode }> = ({ childre
   const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [lastRemovedItem, setLastRemovedItem] = useState<CartItem | null>(null);
+
+  const { userData, logout: firebaseLogout } = useAuth();
+
+  useEffect(() => {
+    if (userData) {
+      setCurrentUser(userData);
+    }
+  }, [userData]);
 
   const login = (email: string, password: string): boolean => {
     // Check Admin
@@ -67,6 +76,7 @@ export const MarketplaceProvider: React.FC<{ children: ReactNode }> = ({ childre
   };
 
   const logout = () => {
+    firebaseLogout();
     setCurrentUser(null);
     setCart([]);
   };
@@ -98,7 +108,7 @@ export const MarketplaceProvider: React.FC<{ children: ReactNode }> = ({ childre
     if (itemToRemove) {
       setLastRemovedItem(itemToRemove);
       setCart(prev => prev.filter(item => item.id !== productId));
-      
+
       // Clear last removed item after 5 seconds
       setTimeout(() => {
         setLastRemovedItem(current => current?.id === productId ? null : current);
