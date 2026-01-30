@@ -1,6 +1,7 @@
 import React from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { MarketplaceProvider } from './context/MarketplaceContext';
+import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import RoleSelection from './pages/RoleSelection';
 import BuyerHome from './pages/buyer/BuyerHome';
@@ -11,6 +12,7 @@ import SellerDashboard from './pages/seller/SellerDashboard';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
+import { Role } from './types';
 
 const App: React.FC = () => {
   return (
@@ -26,17 +28,29 @@ const App: React.FC = () => {
 
               <Route path="/" element={<RoleSelection />} />
 
-              {/* Buyer Routes */}
+              {/* Buyer Routes - Public browsing, protected checkout */}
               <Route path="/buyer" element={<BuyerHome />} />
               <Route path="/buyer/cart" element={<Cart />} />
-              <Route path="/buyer/checkout" element={<Checkout />} />
+              <Route path="/buyer/checkout" element={
+                <ProtectedRoute allowedRoles={[Role.BUYER]}>
+                  <Checkout />
+                </ProtectedRoute>
+              } />
 
-              {/* Seller Routes */}
+              {/* Seller Routes - Protected, seller only */}
               <Route path="/seller-login" element={<SellerLogin />} />
-              <Route path="/seller" element={<SellerDashboard />} />
+              <Route path="/seller" element={
+                <ProtectedRoute allowedRoles={[Role.SELLER]}>
+                  <SellerDashboard />
+                </ProtectedRoute>
+              } />
 
-              {/* Admin Routes */}
-              <Route path="/admin" element={<AdminDashboard />} />
+              {/* Admin Routes - Protected, admin only */}
+              <Route path="/admin" element={
+                <ProtectedRoute allowedRoles={[Role.ADMIN]}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } />
 
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
