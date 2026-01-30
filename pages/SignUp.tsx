@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Role } from '../types';
-import { Lock, Mail, User } from 'lucide-react';
+import { Lock, Mail, User, Briefcase, ChevronDown } from 'lucide-react';
 
 const SignUp = () => {
     const [formData, setFormData] = useState({
@@ -10,13 +10,15 @@ const SignUp = () => {
         password: '',
         confirmPassword: '',
         name: '',
+        role: Role.BUYER,
+        businessName: '',
     });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const { signup } = useAuth();
     const navigate = useNavigate();
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
@@ -34,9 +36,27 @@ const SignUp = () => {
 
         setLoading(true);
         try {
-            const { email, password, confirmPassword, ...additionalData } = formData;
-            await signup(email, password, { ...additionalData, role: Role.BUYER });
-            navigate('/');
+            const { email, password, confirmPassword, role, businessName, ...additionalData } = formData;
+
+            // Prepare user data based on role
+            const userData = {
+                ...additionalData,
+                role,
+                ...(role === Role.SELLER && {
+                    businessName,
+                    isVerified: false,
+                    joinedDate: new Date().toISOString().split('T')[0]
+                })
+            };
+
+            await signup(email, password, userData);
+
+            // Navigate based on role
+            if (role === Role.SELLER) {
+                navigate('/seller');
+            } else {
+                navigate('/buyer');
+            }
         } catch (err: any) {
             console.error('Signup error:', err);
             switch (err.code) {
@@ -124,12 +144,43 @@ const SignUp = () => {
                             className="w-full pl-10 pr-4 py-3 bg-[#2A1617] border border-[#7A4B47] rounded-md focus:border-[#FE7F42] outline-none transition-colors placeholder-[#7A4B47] text-[#FFFB97]"
                         />
                     </div>
+
+                    {/* Role Selection */}
+                    <div className="relative">
+                        <ChevronDown size={18} className="absolute right-3 top-3.5 text-[#7A4B47] pointer-events-none" />
+                        <select
+                            name="role"
+                            value={formData.role}
+                            onChange={handleChange}
+                            className="w-full px-4 py-3 bg-[#2A1617] border border-[#7A4B47] rounded-md focus:border-[#FE7F42] outline-none transition-colors text-[#FFFB97] appearance-none cursor-pointer"
+                        >
+                            <option value={Role.BUYER}>I want to Buy</option>
+                            <option value={Role.SELLER}>I want to Sell</option>
+                        </select>
+                    </div>
+
+                    {/* Business Name - Only for Sellers */}
+                    {formData.role === Role.SELLER && (
+                        <div className="relative">
+                            <Briefcase size={18} className="absolute left-3 top-3.5 text-[#7A4B47]" />
+                            <input
+                                type="text"
+                                name="businessName"
+                                value={formData.businessName}
+                                onChange={handleChange}
+                                required
+                                placeholder="Business Name"
+                                className="w-full pl-10 pr-4 py-3 bg-[#2A1617] border border-[#7A4B47] rounded-md focus:border-[#FE7F42] outline-none transition-colors placeholder-[#7A4B47] text-[#FFFB97]"
+                            />
+                        </div>
+                    )}
+
                     <button
                         type="submit"
                         disabled={loading}
                         className="w-full bg-[#FE7F42] hover:bg-[#FE7F42]/90 text-[#2A1617] font-bold py-3 uppercase tracking-wide rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {loading ? 'Creating Account...' : 'Sign Up'}
+                        {loading ? 'Creating Account...' : formData.role === Role.SELLER ? 'Create Seller Account' : 'Sign Up'}
                     </button>
                 </form>
                 <p className="text-center mt-6 text-[#7A4B47] text-sm">
